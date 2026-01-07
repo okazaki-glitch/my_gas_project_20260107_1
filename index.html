@@ -4,6 +4,164 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>シンプルメモ帳</title>
+  <script>
+    // ページ読み込み直後に関数を定義
+    let currentEditId = null;
+    
+    function loadMemos() {
+      console.log('■ loadMemos開始');
+      const container = document.getElementById('memosContainer');
+      if (container) {
+        container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-state-icon">⏳</div><p>読み込み中...</p></div>';
+      }
+      
+      try {
+        google.script.run
+          .withSuccessHandler(function(memos) {
+            console.log('■ getMemos成功:', memos);
+            displayMemos(memos);
+          })
+          .withFailureHandler(function(error) {
+            console.error('■ getMemos失敗:', error);
+            if (container) {
+              container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-state-icon">❌</div><p>エラー: ' + error + '</p></div>';
+            }
+          })
+          .getMemos();
+      } catch (e) {
+        console.error('■ 例外エラー:', e);
+      }
+    }
+
+    function displayMemos(memos) {
+      console.log('■ displayMemos:', memos);
+      const container = document.getElementById('memosContainer');
+      if (!container) {
+        console.error('■ memosContainerが見つかりません');
+        return;
+      }
+
+      if (!memos || memos.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-state-icon">📭</div><p>まだメモがありません。上記のフォームで新しいメモを作成してください。</p></div>';
+        return;
+      }
+
+      console.log('■ メモ数:', memos.length);
+      container.innerHTML = memos.map(memo => `
+        <div class="memo-card">
+          <div class="memo-title">${escapeHtml(memo.title || '（タイトルなし）')}</div>
+          <div class="memo-content">${escapeHtml(memo.content)}</div>
+          <div class="memo-timestamp">${formatDate(memo.timestamp)}</div>
+          <div class="memo-actions">
+            <button class="btn-edit" onclick="openEditModal('${memo.id}', '${escapeHtmlAttr(memo.title)}', '${escapeHtmlAttr(memo.content)}')">編集</button>
+            <button class="btn-delete" onclick="deleteMemo('${memo.id}')">削除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function saveMemo() {
+      const title = document.getElementById('title').value.trim();
+      const content = document.getElementById('content').value.trim();
+
+      if (!content) {
+        alert('内容を入力してください。');
+        return;
+      }
+
+      console.log('■ saveMemo開始');
+      google.script.run
+        .withSuccessHandler(function(result) {
+          console.log('■ saveMemo成功:', result);
+          clearForm();
+          loadMemos();
+        })
+        .withFailureHandler(function(error) {
+          console.error('■ saveMemo失敗:', error);
+          alert('保存に失敗しました: ' + error);
+        })
+        .saveMemo(title || '（タイトルなし）', content);
+    }
+
+    function clearForm() {
+      document.getElementById('title').value = '';
+      document.getElementById('content').value = '';
+      document.getElementById('title').focus();
+    }
+
+    function deleteMemo(id) {
+      if (confirm('このメモを削除してもよろしいですか？')) {
+        console.log('■ deleteMemo開始:', id);
+        google.script.run
+          .withSuccessHandler(function(result) {
+            console.log('■ deleteMemo成功:', result);
+            loadMemos();
+          })
+          .withFailureHandler(function(error) {
+            console.error('■ deleteMemo失敗:', error);
+            alert('削除に失敗しました: ' + error);
+          })
+          .deleteMemo(id);
+      }
+    }
+
+    function openEditModal(id, title, content) {
+      currentEditId = id;
+      document.getElementById('editTitle').value = title;
+      document.getElementById('editContent').value = content;
+      document.getElementById('editModal').classList.add('active');
+      document.getElementById('editTitle').focus();
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+      currentEditId = null;
+    }
+
+    function submitEdit() {
+      const title = document.getElementById('editTitle').value.trim();
+      const content = document.getElementById('editContent').value.trim();
+
+      if (!content) {
+        alert('内容を入力してください。');
+        return;
+      }
+
+      console.log('■ updateMemo開始:', currentEditId);
+      google.script.run
+        .withSuccessHandler(function(result) {
+          console.log('■ updateMemo成功:', result);
+          closeEditModal();
+          loadMemos();
+        })
+        .withFailureHandler(function(error) {
+          console.error('■ updateMemo失敗:', error);
+          alert('更新に失敗しました: ' + error);
+        })
+        .updateMemo(currentEditId, title || '（タイトルなし）', content);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function escapeHtmlAttr(text) {
+      return text.replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}/${month}/${day} ${hours}:${minutes}`;
+    }
+  </script>
   <style>
     * {
       margin: 0;
@@ -371,189 +529,34 @@
     <div class="spinner"></div>
   </div>
 
+  <!-- 初期化処理 -->
   <script>
-    let currentEditId = null;
-
-    // ページロード時にメモを取得
-    function loadMemos() {
-      showLoading(true);
-      try {
-        google.script.run
-          .withSuccessHandler(displayMemos)
-          .withFailureHandler((error) => {
-            console.error('エラー:', error);
-            showLoading(false);
-            alert('メモの読み込みに失敗しました: ' + error);
-          })
-          .getMemos();
-      } catch (e) {
-        console.error('エラー:', e);
-        showLoading(false);
-        alert('エラーが発生しました: ' + e.message);
-      }
-    }
-
-    // メモを表示
-    function displayMemos(memos) {
-      showLoading(false);
-      const container = document.getElementById('memosContainer');
-
-      console.log('表示するメモ:', memos);
-
-      if (!memos || memos.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state" style="grid-column: 1 / -1;">
-            <div class="empty-state-icon">📭</div>
-            <p>まだメモがありません。上記のフォームで新しいメモを作成してください。</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = memos.map(memo => `
-        <div class="memo-card">
-          <div class="memo-title">${escapeHtml(memo.title || '（タイトルなし）')}</div>
-          <div class="memo-content">${escapeHtml(memo.content)}</div>
-          <div class="memo-timestamp">${formatDate(memo.timestamp)}</div>
-          <div class="memo-actions">
-            <button class="btn-edit" onclick="openEditModal('${memo.id}', '${escapeHtmlAttr(memo.title)}', '${escapeHtmlAttr(memo.content)}')">編集</button>
-            <button class="btn-delete" onclick="deleteMemo('${memo.id}')">削除</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    // メモを保存
-    function saveMemo() {
-      const title = document.getElementById('title').value.trim();
-      const content = document.getElementById('content').value.trim();
-
-      if (!content) {
-        alert('内容を入力してください。');
-        return;
-      }
-
-      showLoading(true);
-      google.script.run
-        .withSuccessHandler(() => {
-          clearForm();
+    // ページ読み込み完了後に実行
+    console.log('■ ページロード開始');
+    
+    // 確実にDOMが準備できた後に実行
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('■ DOMContentLoaded発火');
+        setTimeout(() => {
+          console.log('■ loadMemos呼び出し');
           loadMemos();
-        })
-        .withFailureHandler((error) => {
-          showLoading(false);
-          alert('保存に失敗しました: ' + error);
-        })
-        .saveMemo(title || '（タイトルなし）', content);
+        }, 500);
+      });
+    } else {
+      console.log('■ document既に準備完了');
+      setTimeout(() => {
+        console.log('■ loadMemos呼び出し');
+        loadMemos();
+      }, 500);
     }
 
-    // フォームをクリア
-    function clearForm() {
-      document.getElementById('title').value = '';
-      document.getElementById('content').value = '';
-      document.getElementById('title').focus();
-    }
-
-    // メモを削除
-    function deleteMemo(id) {
-      if (confirm('このメモを削除してもよろしいですか？')) {
-        showLoading(true);
-        google.script.run
-          .withSuccessHandler(loadMemos)
-          .withFailureHandler((error) => {
-            showLoading(false);
-            alert('削除に失敗しました: ' + error);
-          })
-          .deleteMemo(id);
-      }
-    }
-
-    // 編集モーダルを開く
-    function openEditModal(id, title, content) {
-      currentEditId = id;
-      document.getElementById('editTitle').value = title;
-      document.getElementById('editContent').value = content;
-      document.getElementById('editModal').classList.add('active');
-      document.getElementById('editTitle').focus();
-    }
-
-    // 編集モーダルを閉じる
-    function closeEditModal() {
-      document.getElementById('editModal').classList.remove('active');
-      currentEditId = null;
-    }
-
-    // 編集内容を送信
-    function submitEdit() {
-      const title = document.getElementById('editTitle').value.trim();
-      const content = document.getElementById('editContent').value.trim();
-
-      if (!content) {
-        alert('内容を入力してください。');
-        return;
-      }
-
-      showLoading(true);
-      google.script.run
-        .withSuccessHandler(() => {
-          closeEditModal();
-          loadMemos();
-        })
-        .withFailureHandler((error) => {
-          showLoading(false);
-          alert('更新に失敗しました: ' + error);
-        })
-        .updateMemo(currentEditId, title || '（タイトルなし）', content);
-    }
-
-    // ローディング表示
-    function showLoading(show) {
-      document.getElementById('loading').style.display = show ? 'flex' : 'none';
-    }
-
-    // HTML エスケープ
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    // 属性用エスケープ
-    function escapeHtmlAttr(text) {
-      return text.replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-
-    // 日付フォーマット
-    function formatDate(dateStr) {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      return `${year}/${month}/${day} ${hours}:${minutes}`;
-    }
-
-    // モーダル閉じるボタン (Escキー対応)
+    // Escキーでモーダルを閉じる
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeEditModal();
       }
     });
-
-    // 初期化
-    console.log('ページロード開始');
-    
-    // DOMContentLoadedで実行
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOMContentLoaded: メモ読み込み開始');
-        setTimeout(loadMemos, 100);
-      });
-    } else {
-      console.log('document ready: メモ読み込み開始');
-      setTimeout(loadMemos, 100);
-    }
   </script>
 </body>
 </html>
