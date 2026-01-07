@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>メモ帳テスト</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    #content { width: 100%; height: 100px; }
+    button { padding: 10px 20px; margin: 10px 5px 0 0; }
+  </style>
+</head>
+<body>
+  <h1>シンプルメモ帳テスト</h1>
+  
+  <input type="text" id="title" placeholder="タイトル" style="width: 100%; padding: 5px;">
+  <textarea id="content" placeholder="内容"></textarea>
+  
+  <div>
+    <button onclick="testSave()">テスト保存</button>
+    <button onclick="testLoad()">テスト読み込み</button>
+  </div>
+  
+  <h2>メモ一覧</h2>
+  <div id="result"></div>
+
+  <script>
+    function testSave() {
+      const title = document.getElementById('title').value || 'テスト';
+      const content = document.getElementById('content').value;
+      
+      if (!content) {
+        alert('内容を入力してください');
+        return;
+      }
+      
+      console.log('save開始:', {title, content});
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          console.log('save成功:', result);
+          alert('保存しました');
+          testLoad();
+        })
+        .withFailureHandler(function(error) {
+          console.log('saveエラー:', error);
+          alert('エラー: ' + error);
+        })
+        .saveMemo(title, content);
+    }
+
+    function testLoad() {
+      console.log('load開始');
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          console.log('load成功:', result);
+          document.getElementById('result').innerHTML = 
+            '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+        })
+        .withFailureHandler(function(error) {
+          console.log('loadエラー:', error);
+          alert('エラー: ' + error);
+        })
+        .getMemos();
+    }
+
+    console.log('ページロード完了');
+    testLoad();
+  </script>
+</body>
+</html>

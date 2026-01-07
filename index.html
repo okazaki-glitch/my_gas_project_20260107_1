@@ -543,7 +543,17 @@
 
     // 初期化
     console.log('ページロード開始');
-    loadMemos();
+    
+    // DOMContentLoadedで実行
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOMContentLoaded: メモ読み込み開始');
+        setTimeout(loadMemos, 100);
+      });
+    } else {
+      console.log('document ready: メモ読み込み開始');
+      setTimeout(loadMemos, 100);
+    }
   </script>
 </body>
 </html>
