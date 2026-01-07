@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シンプルメモ帳</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      max-width: 900px;
+      width: 100%;
+      padding: 30px;
+    }
+
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 28px;
+    }
+
+    .form-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      border: 2px solid #e9ecef;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-save {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      flex: 1;
+    }
+
+    .btn-save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-save:active {
+      transform: translateY(0);
+    }
+
+    .btn-clear {
+      background: #e9ecef;
+      color: #495057;
+      flex: 1;
+    }
+
+    .btn-clear:hover {
+      background: #dee2e6;
+    }
+
+    .memos-section h2 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+
+    .memos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+    }
+
+    .memo-card {
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .memo-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      border-color: #667eea;
+    }
+
+    .memo-title {
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 16px;
+      word-break: break-word;
+    }
+
+    .memo-content {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 12px;
+      line-height: 1.5;
+      max-height: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+
+    .memo-timestamp {
+      font-size: 12px;
+      color: #adb5bd;
+      margin-bottom: 12px;
+    }
+
+    .memo-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-edit,
+    .btn-delete {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-edit {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-edit:hover {
+      background: #5568d3;
+    }
+
+    .btn-delete {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-delete:hover {
+      background: #c82333;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #adb5bd;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal.active {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-content h3 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      flex: 1;
+    }
+
+    .btn-cancel {
+      background: #e9ecef;
+      color: #495057;
+      flex: 1;
+    }
+
+    .btn-cancel:hover {
+      background: #dee2e6;
+    }
+
+    .loading {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2000;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .memos-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 シンプルメモ帳</h1>
+
+    <div class="form-section">
+      <div class="form-group">
+        <label for="title">タイトル</label>
+        <input type="text" id="title" placeholder="メモのタイトルを入力" maxlength="100">
+      </div>
+
+      <div class="form-group">
+        <label for="content">内容</label>
+        <textarea id="content" placeholder="メモの内容を入力..."></textarea>
+      </div>
+
+      <div class="button-group">
+        <button class="btn-save" onclick="saveMemo()">💾 保存</button>
+        <button class="btn-clear" onclick="clearForm()">🗑️ クリア</button>
+      </div>
+    </div>
+
+    <div class="memos-section">
+      <h2>📌 保存されたメモ</h2>
+      <div class="memos-grid" id="memosContainer">
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <p>まだメモがありません。上記のフォームで新しいメモを作成してください。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 編集モーダル -->
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <h3>メモを編集</h3>
+      <div class="form-group">
+        <label for="editTitle">タイトル</label>
+        <input type="text" id="editTitle" maxlength="100">
+      </div>
+      <div class="form-group">
+        <label for="editContent">内容</label>
+        <textarea id="editContent"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-submit" onclick="submitEdit()">更新</button>
+        <button class="btn-cancel" onclick="closeEditModal()">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <script>
+    let currentEditId = null;
+
+    // ページロード時にメモを取得
+    function loadMemos() {
+      showLoading(true);
+      google.script.run.withSuccessHandler(displayMemos).getMemos();
+    }
+
+    // メモを表示
+    function displayMemos(memos) {
+      showLoading(false);
+      const container = document.getElementById('memosContainer');
+
+      if (!memos || memos.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="empty-state-icon">📭</div>
+            <p>まだメモがありません。上記のフォームで新しいメモを作成してください。</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = memos.map(memo => `
+        <div class="memo-card">
+          <div class="memo-title">${escapeHtml(memo.title || '（タイトルなし）')}</div>
+          <div class="memo-content">${escapeHtml(memo.content)}</div>
+          <div class="memo-timestamp">${formatDate(memo.timestamp)}</div>
+          <div class="memo-actions">
+            <button class="btn-edit" onclick="openEditModal('${memo.id}', '${escapeHtmlAttr(memo.title)}', '${escapeHtmlAttr(memo.content)}')">編集</button>
+            <button class="btn-delete" onclick="deleteMemo('${memo.id}')">削除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // メモを保存
+    function saveMemo() {
+      const title = document.getElementById('title').value.trim();
+      const content = document.getElementById('content').value.trim();
+
+      if (!content) {
+        alert('内容を入力してください。');
+        return;
+      }
+
+      showLoading(true);
+      google.script.run.withSuccessHandler(() => {
+        clearForm();
+        loadMemos();
+      }).saveMemo(title || '（タイトルなし）', content);
+    }
+
+    // フォームをクリア
+    function clearForm() {
+      document.getElementById('title').value = '';
+      document.getElementById('content').value = '';
+      document.getElementById('title').focus();
+    }
+
+    // メモを削除
+    function deleteMemo(id) {
+      if (confirm('このメモを削除してもよろしいですか？')) {
+        showLoading(true);
+        google.script.run.withSuccessHandler(loadMemos).deleteMemo(id);
+      }
+    }
+
+    // 編集モーダルを開く
+    function openEditModal(id, title, content) {
+      currentEditId = id;
+      document.getElementById('editTitle').value = title;
+      document.getElementById('editContent').value = content;
+      document.getElementById('editModal').classList.add('active');
+      document.getElementById('editTitle').focus();
+    }
+
+    // 編集モーダルを閉じる
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+      currentEditId = null;
+    }
+
+    // 編集内容を送信
+    function submitEdit() {
+      const title = document.getElementById('editTitle').value.trim();
+      const content = document.getElementById('editContent').value.trim();
+
+      if (!content) {
+        alert('内容を入力してください。');
+        return;
+      }
+
+      showLoading(true);
+      google.script.run.withSuccessHandler(() => {
+        closeEditModal();
+        loadMemos();
+      }).updateMemo(currentEditId, title || '（タイトルなし）', content);
+    }
+
+    // ローディング表示
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'flex' : 'none';
+    }
+
+    // HTML エスケープ
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 属性用エスケープ
+    function escapeHtmlAttr(text) {
+      return text.replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // 日付フォーマット
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}/${month}/${day} ${hours}:${minutes}`;
+    }
+
+    // モーダル閉じるボタン (Escキー対応)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeEditModal();
+      }
+    });
+
+    // 初期化
+    loadMemos();
+  </script>
+</body>
+</html>
