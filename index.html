@@ -34,30 +34,51 @@
     }
 
     function displayMemos(memos) {
-      console.log('■ displayMemos:', memos);
+      console.log('■ displayMemos:', typeof memos, memos);
       const container = document.getElementById('memosContainer');
       if (!container) {
         console.error('■ memosContainerが見つかりません');
         return;
       }
 
-      if (!memos || memos.length === 0) {
+      // nullやundefinedの場合は空配列にする
+      if (!memos) {
+        console.warn('■ memosが null/undefined');
+        memos = [];
+      }
+
+      if (!Array.isArray(memos)) {
+        console.error('■ memosが配列ではありません:', typeof memos);
+        memos = [];
+      }
+
+      if (memos.length === 0) {
+        console.log('■ メモなし');
         container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-state-icon">📭</div><p>まだメモがありません。上記のフォームで新しいメモを作成してください。</p></div>';
         return;
       }
 
       console.log('■ メモ数:', memos.length);
-      container.innerHTML = memos.map(memo => `
-        <div class="memo-card">
-          <div class="memo-title">${escapeHtml(memo.title || '（タイトルなし）')}</div>
-          <div class="memo-content">${escapeHtml(memo.content)}</div>
-          <div class="memo-timestamp">${formatDate(memo.timestamp)}</div>
-          <div class="memo-actions">
-            <button class="btn-edit" onclick="openEditModal('${memo.id}', '${escapeHtmlAttr(memo.title)}', '${escapeHtmlAttr(memo.content)}')">編集</button>
-            <button class="btn-delete" onclick="deleteMemo('${memo.id}')">削除</button>
-          </div>
-        </div>
-      `).join('');
+      try {
+        container.innerHTML = memos.map(memo => {
+          console.log('■ レンダリング中:', memo.id);
+          return `
+            <div class="memo-card">
+              <div class="memo-title">${escapeHtml(memo.title || '（タイトルなし）')}</div>
+              <div class="memo-content">${escapeHtml(memo.content)}</div>
+              <div class="memo-timestamp">${formatDate(memo.timestamp)}</div>
+              <div class="memo-actions">
+                <button class="btn-edit" onclick="openEditModal('${memo.id}', '${escapeHtmlAttr(memo.title)}', '${escapeHtmlAttr(memo.content)}')">編集</button>
+                <button class="btn-delete" onclick="deleteMemo('${memo.id}')">削除</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+        console.log('■ レンダリング完了');
+      } catch (error) {
+        console.error('■ レンダリングエラー:', error);
+        container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-state-icon">❌</div><p>表示エラーが発生しました</p></div>';
+      }
     }
 
     function saveMemo() {

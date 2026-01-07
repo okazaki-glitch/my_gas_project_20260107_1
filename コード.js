@@ -51,30 +51,45 @@ function getMemos() {
   try {
     Logger.log('getMemos開始');
     const sheet = getOrCreateSheet();
-    const data = sheet.getDataRange().getValues();
     
-    Logger.log('取得したデータ行数: ' + data.length);
+    // 最後の行を取得
+    const lastRow = sheet.getLastRow();
+    Logger.log('最後の行: ' + lastRow);
     
-    if (data.length <= 1) {
+    if (lastRow <= 1) {
       Logger.log('ヘッダーのみ');
       return []; // ヘッダー行のみの場合
     }
     
+    // データを取得（ヘッダーを除く）
+    const dataRange = sheet.getRange(2, 1, lastRow - 1, 4);
+    const data = dataRange.getValues();
+    
+    Logger.log('取得したデータ行数: ' + data.length);
+    Logger.log('データ内容: ' + JSON.stringify(data.slice(0, 3)));
+    
     const memos = [];
-    for (let i = 1; i < data.length; i++) {
-      Logger.log('行' + i + ': ' + data[i][0]);
-      memos.push({
-        id: data[i][0],
-        title: data[i][1],
-        content: data[i][2],
-        timestamp: data[i][3]
-      });
+    for (let i = 0; i < data.length; i++) {
+      if (data[i][0]) { // IDがある場合のみ追加
+        const memo = {
+          id: String(data[i][0]),
+          title: String(data[i][1] || ''),
+          content: String(data[i][2] || ''),
+          timestamp: data[i][3] ? new Date(data[i][3]).toISOString() : new Date().toISOString()
+        };
+        memos.push(memo);
+        Logger.log('追加したメモ: ' + memo.id);
+      }
     }
     
-    Logger.log('メモ数: ' + memos.length);
-    return memos.reverse(); // 新しい順に並び替え
+    Logger.log('メモ総数: ' + memos.length);
+    const result = memos.reverse(); // 新しい順に並び替え
+    Logger.log('返す結果: ' + JSON.stringify(result.slice(0, 2)));
+    
+    return result;
   } catch (e) {
     Logger.log('エラー (getMemos): ' + e.toString());
+    Logger.log('スタックトレース: ' + e.stack);
     return [];
   }
 }
