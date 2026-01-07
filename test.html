@@ -16,10 +16,11 @@
   
   <div>
     <button onclick="testSave()">テスト保存</button>
-    <button onclick="testLoad()">テスト読み込み</button>
+    <button onclick="testLoad()">メモ読み込み</button>
+    <button onclick="showSpreadsheetInfo()">スプシ情報</button>
   </div>
   
-  <h2>メモ一覧</h2>
+  <h2>結果</h2>
   <div id="result"></div>
 
   <script>
@@ -63,8 +64,24 @@
         .getMemos();
     }
 
+    function showSpreadsheetInfo() {
+      console.log('スプレッドシート情報取得開始');
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          console.log('スプレッドシート情報:', result);
+          document.getElementById('result').innerHTML = 
+            '<h3>スプレッドシート情報</h3><pre>' + JSON.stringify(result, null, 2) + '</pre>';
+        })
+        .withFailureHandler(function(error) {
+          console.log('エラー:', error);
+          alert('エラー: ' + error);
+        })
+        .getSpreadsheetInfo();
+    }
+
     console.log('ページロード完了');
-    testLoad();
+    showSpreadsheetInfo();
   </script>
 </body>
 </html>
