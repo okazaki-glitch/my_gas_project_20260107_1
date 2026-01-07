@@ -32,6 +32,20 @@ function getOrCreateSheet() {
 function saveMemo(title, content) {
   try {
     Logger.log('saveMemo開始: title=' + title + ', content長=' + content.length);
+    
+    // バリデーション
+    if (!content || content.trim().length === 0) {
+      return { success: false, error: 'メモの内容は入力必須です。' };
+    }
+    
+    if (title && title.length > 50) {
+      return { success: false, error: 'タイトルは50文字以下にしてください。（現在: ' + title.length + '文字）' };
+    }
+    
+    if (content.length > 300) {
+      return { success: false, error: 'メモの内容は300文字以下にしてください。（現在: ' + content.length + '文字）' };
+    }
+    
     const sheet = getOrCreateSheet();
     const newId = Utilities.getUuid();
     const timestamp = new Date();
@@ -121,6 +135,20 @@ function deleteMemo(id) {
 function updateMemo(id, title, content) {
   try {
     Logger.log('updateMemo開始: ID=' + id);
+    
+    // バリデーション
+    if (!content || content.trim().length === 0) {
+      return { success: false, error: 'メモの内容は入力必須です。' };
+    }
+    
+    if (title && title.length > 50) {
+      return { success: false, error: 'タイトルは50文字以下にしてください。（現在: ' + title.length + '文字）' };
+    }
+    
+    if (content.length > 300) {
+      return { success: false, error: 'メモの内容は300文字以下にしてください。（現在: ' + content.length + '文字）' };
+    }
+    
     const sheet = getOrCreateSheet();
     const data = sheet.getDataRange().getValues();
     

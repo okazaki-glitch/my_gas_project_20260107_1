@@ -90,12 +90,26 @@
         return;
       }
 
+      if (title.length > 50) {
+        alert('タイトルは50文字以下にしてください。');
+        return;
+      }
+
+      if (content.length > 300) {
+        alert('メモの内容は300文字以下にしてください。');
+        return;
+      }
+
       console.log('■ saveMemo開始');
       google.script.run
         .withSuccessHandler(function(result) {
           console.log('■ saveMemo成功:', result);
-          clearForm();
-          loadMemos();
+          if (result.success) {
+            clearForm();
+            loadMemos();
+          } else {
+            alert('エラー: ' + result.error);
+          }
         })
         .withFailureHandler(function(error) {
           console.error('■ saveMemo失敗:', error);
@@ -148,12 +162,26 @@
         return;
       }
 
+      if (title.length > 50) {
+        alert('タイトルは50文字以下にしてください。');
+        return;
+      }
+
+      if (content.length > 300) {
+        alert('メモの内容は300文字以下にしてください。');
+        return;
+      }
+
       console.log('■ updateMemo開始:', currentEditId);
       google.script.run
         .withSuccessHandler(function(result) {
           console.log('■ updateMemo成功:', result);
-          closeEditModal();
-          loadMemos();
+          if (result.success) {
+            closeEditModal();
+            loadMemos();
+          } else {
+            alert('エラー: ' + result.error);
+          }
         })
         .withFailureHandler(function(error) {
           console.error('■ updateMemo失敗:', error);
@@ -181,6 +209,68 @@
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       return `${year}/${month}/${day} ${hours}:${minutes}`;
+    }
+
+    // 保存フォームの文字数カウント更新
+    function updateCharCount() {
+      const titleEl = document.getElementById('title');
+      const contentEl = document.getElementById('content');
+      const titleCountEl = document.getElementById('titleCount');
+      const contentCountEl = document.getElementById('contentCount');
+
+      const titleLen = titleEl.value.length;
+      const contentLen = contentEl.value.length;
+
+      // タイトル
+      titleCountEl.textContent = titleLen + ' / 50';
+      if (titleLen > 50) {
+        titleCountEl.className = 'char-count error';
+      } else if (titleLen > 40) {
+        titleCountEl.className = 'char-count warning';
+      } else {
+        titleCountEl.className = 'char-count';
+      }
+
+      // コンテンツ
+      contentCountEl.textContent = contentLen + ' / 300';
+      if (contentLen > 300) {
+        contentCountEl.className = 'char-count error';
+      } else if (contentLen > 270) {
+        contentCountEl.className = 'char-count warning';
+      } else {
+        contentCountEl.className = 'char-count';
+      }
+    }
+
+    // 編集モーダルの文字数カウント更新
+    function updateEditCharCount() {
+      const titleEl = document.getElementById('editTitle');
+      const contentEl = document.getElementById('editContent');
+      const titleCountEl = document.getElementById('editTitleCount');
+      const contentCountEl = document.getElementById('editContentCount');
+
+      const titleLen = titleEl.value.length;
+      const contentLen = contentEl.value.length;
+
+      // タイトル
+      titleCountEl.textContent = titleLen + ' / 50';
+      if (titleLen > 50) {
+        titleCountEl.className = 'char-count error';
+      } else if (titleLen > 40) {
+        titleCountEl.className = 'char-count warning';
+      } else {
+        titleCountEl.className = 'char-count';
+      }
+
+      // コンテンツ
+      contentCountEl.textContent = contentLen + ' / 300';
+      if (contentLen > 300) {
+        contentCountEl.className = 'char-count error';
+      } else if (contentLen > 270) {
+        contentCountEl.className = 'char-count warning';
+      } else {
+        contentCountEl.className = 'char-count';
+      }
     }
   </script>
   <style>
@@ -476,6 +566,23 @@
       100% { transform: rotate(360deg); }
     }
 
+    .char-count {
+      font-size: 12px;
+      color: #adb5bd;
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    .char-count.warning {
+      color: #fd7e14;
+      font-weight: 600;
+    }
+
+    .char-count.error {
+      color: #dc3545;
+      font-weight: 600;
+    }
+
     @media (max-width: 600px) {
       .container {
         padding: 20px;
@@ -502,12 +609,14 @@
     <div class="form-section">
       <div class="form-group">
         <label for="title">タイトル</label>
-        <input type="text" id="title" placeholder="メモのタイトルを入力" maxlength="100">
+        <input type="text" id="title" placeholder="メモのタイトルを入力" maxlength="50" oninput="updateCharCount()">
+        <div class="char-count" id="titleCount">0 / 50</div>
       </div>
 
       <div class="form-group">
         <label for="content">内容</label>
-        <textarea id="content" placeholder="メモの内容を入力..."></textarea>
+        <textarea id="content" placeholder="メモの内容を入力..." oninput="updateCharCount()"></textarea>
+        <div class="char-count" id="contentCount">0 / 300</div>
       </div>
 
       <div class="button-group">
@@ -533,11 +642,13 @@
       <h3>メモを編集</h3>
       <div class="form-group">
         <label for="editTitle">タイトル</label>
-        <input type="text" id="editTitle" maxlength="100">
+        <input type="text" id="editTitle" maxlength="50" oninput="updateEditCharCount()">
+        <div class="char-count" id="editTitleCount">0 / 50</div>
       </div>
       <div class="form-group">
         <label for="editContent">内容</label>
-        <textarea id="editContent"></textarea>
+        <textarea id="editContent" oninput="updateEditCharCount()"></textarea>
+        <div class="char-count" id="editContentCount">0 / 300</div>
       </div>
       <div class="modal-actions">
         <button class="btn-submit" onclick="submitEdit()">更新</button>
