@@ -84,5 +84,14 @@ function updateMemo(id, title, content) {
 // Webアプリを表示
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('index')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+// テスト用：スプレッドシートの内容を確認
+function testGetMemos() {
+  const result = getMemos();
+  Logger.log('取得したメモ:');
+  Logger.log(JSON.stringify(result, null, 2));
+  return result;
 }

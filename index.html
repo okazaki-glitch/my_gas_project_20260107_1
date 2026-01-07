@@ -377,13 +377,28 @@
     // ページロード時にメモを取得
     function loadMemos() {
       showLoading(true);
-      google.script.run.withSuccessHandler(displayMemos).getMemos();
+      try {
+        google.script.run
+          .withSuccessHandler(displayMemos)
+          .withFailureHandler((error) => {
+            console.error('エラー:', error);
+            showLoading(false);
+            alert('メモの読み込みに失敗しました: ' + error);
+          })
+          .getMemos();
+      } catch (e) {
+        console.error('エラー:', e);
+        showLoading(false);
+        alert('エラーが発生しました: ' + e.message);
+      }
     }
 
     // メモを表示
     function displayMemos(memos) {
       showLoading(false);
       const container = document.getElementById('memosContainer');
+
+      console.log('表示するメモ:', memos);
 
       if (!memos || memos.length === 0) {
         container.innerHTML = `
@@ -419,10 +434,16 @@
       }
 
       showLoading(true);
-      google.script.run.withSuccessHandler(() => {
-        clearForm();
-        loadMemos();
-      }).saveMemo(title || '（タイトルなし）', content);
+      google.script.run
+        .withSuccessHandler(() => {
+          clearForm();
+          loadMemos();
+        })
+        .withFailureHandler((error) => {
+          showLoading(false);
+          alert('保存に失敗しました: ' + error);
+        })
+        .saveMemo(title || '（タイトルなし）', content);
     }
 
     // フォームをクリア
@@ -436,7 +457,13 @@
     function deleteMemo(id) {
       if (confirm('このメモを削除してもよろしいですか？')) {
         showLoading(true);
-        google.script.run.withSuccessHandler(loadMemos).deleteMemo(id);
+        google.script.run
+          .withSuccessHandler(loadMemos)
+          .withFailureHandler((error) => {
+            showLoading(false);
+            alert('削除に失敗しました: ' + error);
+          })
+          .deleteMemo(id);
       }
     }
 
@@ -466,10 +493,16 @@
       }
 
       showLoading(true);
-      google.script.run.withSuccessHandler(() => {
-        closeEditModal();
-        loadMemos();
-      }).updateMemo(currentEditId, title || '（タイトルなし）', content);
+      google.script.run
+        .withSuccessHandler(() => {
+          closeEditModal();
+          loadMemos();
+        })
+        .withFailureHandler((error) => {
+          showLoading(false);
+          alert('更新に失敗しました: ' + error);
+        })
+        .updateMemo(currentEditId, title || '（タイトルなし）', content);
     }
 
     // ローディング表示
@@ -509,6 +542,7 @@
     });
 
     // 初期化
+    console.log('ページロード開始');
     loadMemos();
   </script>
 </body>
